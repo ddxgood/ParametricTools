@@ -1,0 +1,161 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+using Rhino;
+using Rhino.Geometry;
+
+using Grasshopper;
+using Grasshopper.Kernel;
+using Grasshopper.Kernel.Data;
+using Grasshopper.Kernel.Types;
+
+
+
+/// <summary>
+/// This class will be instantiated on demand by the Script component.
+/// </summary>
+public class Script_Instance : GH_ScriptInstance
+{
+#region Utility functions
+  /// <summary>Print a String to the [Out] Parameter of the Script component.</summary>
+  /// <param name="text">String to print.</param>
+  private void Print(string text) { /* Implementation hidden. */ }
+  /// <summary>Print a formatted String to the [Out] Parameter of the Script component.</summary>
+  /// <param name="format">String format.</param>
+  /// <param name="args">Formatting parameters.</param>
+  private void Print(string format, params object[] args) { /* Implementation hidden. */ }
+  /// <summary>Print useful information about an object instance to the [Out] Parameter of the Script component. </summary>
+  /// <param name="obj">Object instance to parse.</param>
+  private void Reflect(object obj) { /* Implementation hidden. */ }
+  /// <summary>Print the signatures of all the overloads of a specific method to the [Out] Parameter of the Script component. </summary>
+  /// <param name="obj">Object instance to parse.</param>
+  private void Reflect(object obj, string method_name) { /* Implementation hidden. */ }
+#endregion
+
+#region Members
+  /// <summary>Gets the current Rhino document.</summary>
+  private readonly RhinoDoc RhinoDocument;
+  /// <summary>Gets the Grasshopper document that owns this script.</summary>
+  private readonly GH_Document GrasshopperDocument;
+  /// <summary>Gets the Grasshopper script component that owns this script.</summary>
+  private readonly IGH_Component Component;
+  /// <summary>
+  /// Gets the current iteration count. The first call to RunScript() is associated with Iteration==0.
+  /// Any subsequent call within the same solution will increment the Iteration count.
+  /// </summary>
+  private readonly int Iteration;
+#endregion
+
+  /// <summary>
+  /// This procedure contains the user code. Input parameters are provided as regular arguments,
+  /// Output parameters as ref arguments. You don't have to assign output parameters,
+  /// they will have a default value.
+  /// </summary>
+  private void RunScript(bool reset, string controlComponentName, int n)
+  {
+        if(reset)
+    {
+      _n = n;
+      _controlComponentName = controlComponentName;
+            
+      GrasshopperDocument.ScheduleSolution(5, SolutionCallback);
+
+//      Print(Component.Attributes.Pivot.X.ToString());
+//      Grasshopper.Kernel.Parameters.Param_Integer testparam = new Grasshopper.Kernel.Parameters.Param_Integer();
+//      testparam.NickName = "testtest";
+//      GrasshopperDocument.AddObject(testparam, false);
+      //Print(testparam.Attributes.Pivot.X.ToString());
+//      testparam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 10, Component.Attributes.Pivot.Y + 50);
+      
+      /*
+      foreach(IGH_DocumentObject obj in GrasshopperDocument.Objects)
+      {
+        if (obj.NickName == controlComponentName)
+        {
+          IGH_Param targ = obj as IGH_Param;
+          //Reflect(targ);
+          //Print(targ.Params.Input[0].SourceCount.ToString());
+          Print(targ.Name);
+        }
+      }
+      */
+      
+    }
+  }
+
+  // <Custom additional code> 
+  private int _n;
+  private string _controlComponentName;
+    
+  private void SolutionCallback(GH_Document doc)
+  {
+
+    Random rnd = new Random();
+    
+    List<IGH_DocumentObject> deletions = new List<IGH_DocumentObject>();
+
+    List<IGH_Param> receivingParams = new List<IGH_Param>();
+
+    foreach(IGH_DocumentObject obj in GrasshopperDocument.Objects)
+    {
+      if (obj.NickName == _controlComponentName)
+      {
+        deletions.Add(obj);
+        IGH_Param tempParam = obj as IGH_Param;
+        if (tempParam.SourceCount > 0)
+        {
+          deletions.AddRange(tempParam.Sources);
+        }
+        foreach(IGH_Param recip in tempParam.Recipients)
+        {
+          receivingParams.Add(recip);
+        }
+      }
+    }
+
+    foreach(IGH_DocumentObject delobj in deletions)
+    {
+      GrasshopperDocument.RemoveObject(delobj, false);
+    }
+
+    Grasshopper.Kernel.Parameters.Param_Integer targetParam = new Grasshopper.Kernel.Parameters.Param_Integer();
+    targetParam.NickName = _controlComponentName;
+    GrasshopperDocument.AddObject(targetParam, false);
+    targetParam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 10, Component.Attributes.Pivot.Y + 50);
+    
+    foreach(IGH_Param receivingParam in receivingParams)
+    {
+      receivingParam.AddSource(targetParam);
+    }
+    
+    for(int i = 0;i < _n;i++)
+    {
+      //instantiate  new slider
+      Grasshopper.Kernel.Special.GH_NumberSlider slid = new Grasshopper.Kernel.Special.GH_NumberSlider();
+      slid.CreateAttributes(); //sets up default values, and makes sure your slider doesn't crash rhino
+
+      //customise slider (position, ranges etc)
+      //targetParam.Attributes.Bounds
+      
+      int inputcount = targetParam.SourceCount;
+      slid.Attributes.Pivot = new System.Drawing.PointF((float) targetParam.Attributes.Pivot.X - slid.Attributes.Bounds.Width - 50, (float) targetParam.Attributes.Pivot.Y + inputcount * 30);
+      slid.Slider.Maximum = 50;
+      slid.Slider.Minimum = -50;
+      slid.Slider.DecimalPlaces = 0;
+      slid.SetSliderValue((decimal) (rnd.Next(-50,51)));
+
+      //Until now, the slider is a hypothetical object.
+      // This command makes it 'real' and adds it to the canvas.
+      GrasshopperDocument.AddObject(slid, false);
+
+      //Connect the new slider to this component
+      targetParam.AddSource(slid);
+    }
+    
+    
+    
+    
+  }
+  // </Custom additional code> 
+}
