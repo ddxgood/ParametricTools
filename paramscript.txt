@@ -52,32 +52,34 @@ public class Script_Instance : GH_ScriptInstance
   /// Output parameters as ref arguments. You don't have to assign output parameters,
   /// they will have a default value.
   /// </summary>
-  private void RunScript(bool reset, string controlComponentName, int n)
+  private void RunScript(bool reset, string controlComponentName, int n, List<int> dataIn, ref object A)
   {
-        if(reset)
+    if(reset)
     {
       _n = n;
       _controlComponentName = controlComponentName;
-            
+      _dataIn = dataIn;
+
+
       GrasshopperDocument.ScheduleSolution(5, SolutionCallback);
 
-//      Print(Component.Attributes.Pivot.X.ToString());
-//      Grasshopper.Kernel.Parameters.Param_Integer testparam = new Grasshopper.Kernel.Parameters.Param_Integer();
-//      testparam.NickName = "testtest";
-//      GrasshopperDocument.AddObject(testparam, false);
+      //      Print(Component.Attributes.Pivot.X.ToString());
+      //      Grasshopper.Kernel.Parameters.Param_Integer testparam = new Grasshopper.Kernel.Parameters.Param_Integer();
+      //      testparam.NickName = "testtest";
+      //      GrasshopperDocument.AddObject(testparam, false);
       //Print(testparam.Attributes.Pivot.X.ToString());
-//      testparam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 10, Component.Attributes.Pivot.Y + 50);
-      
+      //      testparam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 10, Component.Attributes.Pivot.Y + 50);
+
       /*
       foreach(IGH_DocumentObject obj in GrasshopperDocument.Objects)
       {
-        if (obj.NickName == controlComponentName)
-        {
-          IGH_Param targ = obj as IGH_Param;
-          //Reflect(targ);
-          //Print(targ.Params.Input[0].SourceCount.ToString());
-          Print(targ.Name);
-        }
+      if (obj.NickName == controlComponentName)
+      {
+      IGH_Param targ = obj as IGH_Param;
+      //Reflect(targ);
+      //Print(targ.Params.Input[0].SourceCount.ToString());
+      Print(targ.Name);
+      }
       }
       */
       
@@ -87,12 +89,12 @@ public class Script_Instance : GH_ScriptInstance
   // <Custom additional code> 
   private int _n;
   private string _controlComponentName;
-    
+  private List<int> _dataIn;
+  
   private void SolutionCallback(GH_Document doc)
   {
-
     Random rnd = new Random();
-    
+
     List<IGH_DocumentObject> deletions = new List<IGH_DocumentObject>();
 
     List<IGH_Param> receivingParams = new List<IGH_Param>();
@@ -122,13 +124,13 @@ public class Script_Instance : GH_ScriptInstance
     Grasshopper.Kernel.Parameters.Param_Integer targetParam = new Grasshopper.Kernel.Parameters.Param_Integer();
     targetParam.NickName = _controlComponentName;
     GrasshopperDocument.AddObject(targetParam, false);
-    targetParam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 10, Component.Attributes.Pivot.Y + 50);
-    
+    targetParam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 10, Component.Attributes.Pivot.Y + 70);
+
     foreach(IGH_Param receivingParam in receivingParams)
     {
       receivingParam.AddSource(targetParam);
     }
-    
+
     for(int i = 0;i < _n;i++)
     {
       //instantiate  new slider
@@ -137,13 +139,21 @@ public class Script_Instance : GH_ScriptInstance
 
       //customise slider (position, ranges etc)
       //targetParam.Attributes.Bounds
-      
+
+
       int inputcount = targetParam.SourceCount;
       slid.Attributes.Pivot = new System.Drawing.PointF((float) targetParam.Attributes.Pivot.X - slid.Attributes.Bounds.Width - 50, (float) targetParam.Attributes.Pivot.Y + inputcount * 30);
       slid.Slider.Maximum = 50;
       slid.Slider.Minimum = -50;
       slid.Slider.DecimalPlaces = 0;
-      slid.SetSliderValue((decimal) (rnd.Next(-50,51)));
+      // slid.SetSliderValue((decimal) (rnd.Next(-50, 51)));
+
+      if (i + 1 > _dataIn.Count) {
+        slid.SetSliderValue(_dataIn[_dataIn.Count - 1]);
+      }
+      else {
+        slid.SetSliderValue(_dataIn[i]);
+      }
 
       //Until now, the slider is a hypothetical object.
       // This command makes it 'real' and adds it to the canvas.
@@ -152,10 +162,10 @@ public class Script_Instance : GH_ScriptInstance
       //Connect the new slider to this component
       targetParam.AddSource(slid);
     }
-    
-    
-    
-    
+
+
+
+
   }
   // </Custom additional code> 
 }
