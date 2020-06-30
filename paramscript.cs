@@ -64,37 +64,14 @@ public class Script_Instance : GH_ScriptInstance
       _controlComponentName = controlComponentName;
 
 
-      
-      
       string outputpath = @"C:\Users\ddxgo\Documents\Rhino\20200626c#expts\testjsonout.txt";
       string jsonstring;
       ParamsData paramsdata = new ParamsData();
       jsonstring = JsonConvert.SerializeObject(paramsdata);
       File.WriteAllText(outputpath, jsonstring);
-      
+
       
       GrasshopperDocument.ScheduleSolution(5, SolutionCallback);
-
-      //      Print(Component.Attributes.Pivot.X.ToString());
-      //      Grasshopper.Kernel.Parameters.Param_Integer testparam = new Grasshopper.Kernel.Parameters.Param_Integer();
-      //      testparam.NickName = "testtest";
-      //      GrasshopperDocument.AddObject(testparam, false);
-      //Print(testparam.Attributes.Pivot.X.ToString());
-      //      testparam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 10, Component.Attributes.Pivot.Y + 50);
-
-      /*
-      foreach(IGH_DocumentObject obj in GrasshopperDocument.Objects)
-      {
-      if (obj.NickName == controlComponentName)
-      {
-      IGH_Param targ = obj as IGH_Param;
-      //Reflect(targ);
-      //Print(targ.Params.Input[0].SourceCount.ToString());
-      Print(targ.Name);
-      }
-      }
-      */
-
     }
   }
 
@@ -103,23 +80,16 @@ public class Script_Instance : GH_ScriptInstance
   private string _controlComponentName;
   private List<int> _dataIn = new List<int>();
   private int _n;
-  //private List<int> _A = new List<int>();
+
   
-  /*
-  public class WeatherForecast
-  {
-    public DateTimeOffset Date { get; set; }
-    public int TemperatureCelsius { get; set; }
-    public string Summary { get; set; }
-  }
-  */
+  
   public class ParamsData
   {
     private int _NumSliders;
     private List<int> _SliderVals = new List<int>();
     private int _NumPoints;
     private List<Rhino.Geometry.Point3d> _Points = new List<Rhino.Geometry.Point3d>();
-    
+
     public ParamsData(int NumSliders, List<int> SliderVals, int NumPoints, List<Rhino.Geometry.Point3d> Points)
     {
       _NumSliders = NumSliders;
@@ -127,27 +97,43 @@ public class Script_Instance : GH_ScriptInstance
       _NumPoints = NumPoints;
       _Points = Points;
     }
-      
+
+    
+    
     public ParamsData()
     {
       _NumSliders = 5;
+      _NumPoints = 5;
+      _SliderVals.Add(22);
+      _Points.Add(new Rhino.Geometry.Point3d(22, 22, 22));
+      
+
+      
+      
       _SliderVals.Clear();
-      for (int sliderinit = 0; sliderinit <= _NumSliders; sliderinit++) {
+      for (int sliderinit = 0; sliderinit < _NumSliders; sliderinit++) {
         _SliderVals.Add((sliderinit - 3) * 11);
       }
-      _NumPoints = 5;
-      Rhino.Geometry.Point3d testPoint = new Rhino.Geometry.Point3d(0, 0, 0);
-      _Points.Clear();  
-      for (int pointsinit = 0; pointsinit <= _NumPoints; pointsinit++) {
+   
+   
+   //   Rhino.Geometry.Point3d testPoint = new Rhino.Geometry.Point3d(0, 0, 0);
+      _Points.Clear();
+   
+      for (int pointsinit = 0; pointsinit < _NumPoints; pointsinit++) {
         _Points.Add(new Rhino.Geometry.Point3d(pointsinit * 22, pointsinit * 22, pointsinit * 22));
       }
-    }
+   
       
+    }
+    
+  
     public int NumSliders { get {return _NumSliders;} set {_NumSliders = value;} }
     public List<int> SliderVals { get {return _SliderVals;} set {_SliderVals = value;} }
-    public int NumPoints { get {return NumPoints;} set {_NumPoints = value;} }
+    public int NumPoints { get {return _NumPoints;} set {_NumPoints = value;} }
     public List<Rhino.Geometry.Point3d> Points { get {return _Points;} set {_Points = value;} }
   }
+
+  
   
   private void SolutionCallback(GH_Document doc)
   {
@@ -171,7 +157,7 @@ public class Script_Instance : GH_ScriptInstance
     _n = _dataIn[0];
     _dataIn.RemoveAt(0);
 
-    
+
     Random rnd = new Random();
 
     List<IGH_DocumentObject> deletions = new List<IGH_DocumentObject>();
