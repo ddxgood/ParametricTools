@@ -104,11 +104,6 @@ public class Script_Instance : GH_ScriptInstance
     {
       _NumSliders = 5;
       _NumPoints = 5;
-      _SliderVals.Add(22);
-      _Points.Add(new Rhino.Geometry.Point3d(22, 22, 22));
-      
-
-      
       
       _SliderVals.Clear();
       for (int sliderinit = 0; sliderinit < _NumSliders; sliderinit++) {
@@ -116,9 +111,7 @@ public class Script_Instance : GH_ScriptInstance
       }
    
    
-   //   Rhino.Geometry.Point3d testPoint = new Rhino.Geometry.Point3d(0, 0, 0);
-      _Points.Clear();
-   
+      _Points.Clear();   
       for (int pointsinit = 0; pointsinit < _NumPoints; pointsinit++) {
         _Points.Add(new Rhino.Geometry.Point3d(pointsinit * 22, pointsinit * 22, pointsinit * 22));
       }
