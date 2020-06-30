@@ -11,6 +11,9 @@ using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
 
 
+using System.IO;
+using System.Text;
+
 
 /// <summary>
 /// This class will be instantiated on demand by the Script component.
@@ -52,13 +55,11 @@ public class Script_Instance : GH_ScriptInstance
   /// Output parameters as ref arguments. You don't have to assign output parameters,
   /// they will have a default value.
   /// </summary>
-  private void RunScript(bool reset, string controlComponentName, int n, List<int> dataIn, ref object A)
+  private void RunScript(bool reset, string controlComponentName, List<int> dataIn, ref object A)
   {
     if(reset)
     {
-      _n = n;
       _controlComponentName = controlComponentName;
-      _dataIn = dataIn;
 
 
       GrasshopperDocument.ScheduleSolution(5, SolutionCallback);
@@ -82,17 +83,40 @@ public class Script_Instance : GH_ScriptInstance
       }
       }
       */
-      
+
     }
   }
 
   // <Custom additional code> 
-  private int _n;
+
   private string _controlComponentName;
-  private List<int> _dataIn;
+  private List<int> _dataIn = new List<int>();
+  private int _n;
+  //private List<int> _A = new List<int>();
   
   private void SolutionCallback(GH_Document doc)
   {
+
+    string[] lines;
+    string path = @"C:\Users\ddxgo\Documents\Rhino\20200626c#expts\20200629params1.txt";
+    if (File.Exists(path))
+    {
+      lines = File.ReadAllLines(path);
+      _dataIn.Clear();
+      foreach(string line in lines)
+      {
+        _dataIn.Add(Int32.Parse(line));
+      }
+    }
+    else
+    {
+      Print("file not found");
+    }
+
+    _n = _dataIn[0];
+    _dataIn.RemoveAt(0);
+
+
     Random rnd = new Random();
 
     List<IGH_DocumentObject> deletions = new List<IGH_DocumentObject>();
