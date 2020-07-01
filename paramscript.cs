@@ -63,18 +63,7 @@ public class Script_Instance : GH_ScriptInstance
     {
       _controlComponentName = controlComponentName;
       _path = path;
-
-
-      /*
-      string outputpath = @"C:\Users\ddxgo\Documents\Rhino\20200626c#expts\testjsonout.txt";
-      string jsonstring;
-      ParamsData paramsdata = new ParamsData();
-      jsonstring = JsonConvert.SerializeObject(paramsdata);
-      File.WriteAllText(outputpath, jsonstring);
-      */
-
       GrasshopperDocument.ScheduleSolution(5, SolutionCallback);
-      A = _A;
     }
   }
 
@@ -84,8 +73,6 @@ public class Script_Instance : GH_ScriptInstance
   private string _controlComponentName;
   private List<int> _dataIn = new List<int>();
   private int _n;
-  //  private List<int> _A;
-  private string _A;
 
   public class ParamsData
   {
@@ -102,31 +89,13 @@ public class Script_Instance : GH_ScriptInstance
       _Points = Points;
     }
 
-
-
     public ParamsData()
     {
       _NumSliders = 0;
       _NumPoints = 0;
-
-      _SliderVals.Clear();
-      
-      /*
-      for (int sliderinit = 0; sliderinit < _NumSliders; sliderinit++) {
-        _SliderVals.Add((sliderinit - 3) * 11);
-      }
-      */
-
+      _SliderVals.Clear();      
       _Points.Clear();
-      
-      /*
-      for (int pointsinit = 0; pointsinit < _NumPoints; pointsinit++) {
-        _Points.Add(new Rhino.Geometry.Point3d(pointsinit * 22, pointsinit * 22, pointsinit * 22));
-      }
-      */
-
     }
-
 
     public int NumSliders { get {return _NumSliders;} set {_NumSliders = value;} }
     public List<int> SliderVals { get {return _SliderVals;} set {_SliderVals = value;} }
@@ -138,27 +107,6 @@ public class Script_Instance : GH_ScriptInstance
 
   private void SolutionCallback(GH_Document doc)
   {
-
-    /*
-
-    string[] lines;
-    string inputpath = @"C:\Users\ddxgo\Documents\Rhino\20200626c#expts\20200629params1.txt";
-    if (File.Exists(inputpath))
-    {
-      lines = File.ReadAllLines(inputpath);
-      _dataIn.Clear();
-      foreach(string line in lines)
-      {
-        _dataIn.Add(Int32.Parse(line));
-      }
-    }
-    else
-    {
-      Print("file not found");
-    }
-
-    */
-
     string jsonstring = File.ReadAllText(_path);
     ParamsData paramdata = new ParamsData();
     paramdata = JsonConvert.DeserializeObject<ParamsData>(jsonstring);
@@ -169,8 +117,6 @@ public class Script_Instance : GH_ScriptInstance
     
     string teststring = JsonConvert.SerializeObject(paramdata);
     
-    _A = teststring;
-
     Random rnd = new Random();
 
     List<IGH_DocumentObject> deletions = new List<IGH_DocumentObject>();
