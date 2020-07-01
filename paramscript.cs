@@ -57,7 +57,7 @@ public class Script_Instance : GH_ScriptInstance
   /// Output parameters as ref arguments. You don't have to assign output parameters, 
   /// they will have a default value.
   /// </summary>
-  private void RunScript(bool reset, string path, string controlComponentName, List<int> dataIn, ref object A)
+  private void RunScript(bool reset, string path, string controlComponentName, ref object A)
   {
         if(reset)
     {
@@ -93,7 +93,7 @@ public class Script_Instance : GH_ScriptInstance
     {
       _NumSliders = 0;
       _NumPoints = 0;
-      _SliderVals.Clear();      
+      _SliderVals.Clear();
       _Points.Clear();
     }
 
@@ -114,9 +114,9 @@ public class Script_Instance : GH_ScriptInstance
     _n = paramdata.NumSliders;
     _dataIn = paramdata.SliderVals;
 
-    
+
     string teststring = JsonConvert.SerializeObject(paramdata);
-    
+
     Random rnd = new Random();
 
     List<IGH_DocumentObject> deletions = new List<IGH_DocumentObject>();
@@ -148,7 +148,15 @@ public class Script_Instance : GH_ScriptInstance
     Grasshopper.Kernel.Parameters.Param_Integer targetParam = new Grasshopper.Kernel.Parameters.Param_Integer();
     targetParam.NickName = _controlComponentName;
     GrasshopperDocument.AddObject(targetParam, false);
-    targetParam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 10, Component.Attributes.Pivot.Y + 70);
+    targetParam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 110);
+
+    Grasshopper.Kernel.Parameters.Param_Point pointsParam = new Grasshopper.Kernel.Parameters.Param_Point();
+    pointsParam.NickName = _controlComponentName;
+    GrasshopperDocument.AddObject(pointsParam, false);
+    pointsParam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 70);
+
+
+    pointsParam.SetPersistentData(paramdata.Points.ToArray());
 
     foreach(IGH_Param receivingParam in receivingParams)
     {
@@ -166,7 +174,7 @@ public class Script_Instance : GH_ScriptInstance
 
 
       int inputcount = targetParam.SourceCount;
-      slid.Attributes.Pivot = new System.Drawing.PointF((float) targetParam.Attributes.Pivot.X - slid.Attributes.Bounds.Width - 50, (float) targetParam.Attributes.Pivot.Y + inputcount * 30);
+      slid.Attributes.Pivot = new System.Drawing.PointF((float) targetParam.Attributes.Pivot.X - slid.Attributes.Bounds.Width - 70, (float) targetParam.Attributes.Pivot.Y + inputcount * 30 - 12);
       slid.Slider.Maximum = 50;
       slid.Slider.Minimum = -50;
       slid.Slider.DecimalPlaces = 0;
@@ -234,11 +242,6 @@ public class Script_Instance : GH_ScriptInstance
       controlComponentName = (string)(inputs[2]);
     }
 
-    List<int> dataIn = null;
-    if (inputs[3] != null)
-    {
-      dataIn = GH_DirtyCaster.CastToList<int>(inputs[3]);
-    }
 
 
     //3. Declare output parameters
@@ -246,7 +249,7 @@ public class Script_Instance : GH_ScriptInstance
 
 
     //4. Invoke RunScript
-    RunScript(reset, path, controlComponentName, dataIn, ref A);
+    RunScript(reset, path, controlComponentName, ref A);
       
     try
     {
