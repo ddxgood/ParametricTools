@@ -57,32 +57,36 @@ public class Script_Instance : GH_ScriptInstance
   /// Output parameters as ref arguments. You don't have to assign output parameters, 
   /// they will have a default value.
   /// </summary>
-  private void RunScript(bool reset, string controlComponentName, List<int> dataIn, ref object A)
+  private void RunScript(bool reset, string path, string controlComponentName, List<int> dataIn, ref object A)
   {
         if(reset)
     {
       _controlComponentName = controlComponentName;
+      _path = path;
 
 
+      /*
       string outputpath = @"C:\Users\ddxgo\Documents\Rhino\20200626c#expts\testjsonout.txt";
       string jsonstring;
       ParamsData paramsdata = new ParamsData();
       jsonstring = JsonConvert.SerializeObject(paramsdata);
       File.WriteAllText(outputpath, jsonstring);
+      */
 
-      
       GrasshopperDocument.ScheduleSolution(5, SolutionCallback);
+      A = _A;
     }
   }
 
   // <Custom additional code> 
   
+  private string _path;
   private string _controlComponentName;
   private List<int> _dataIn = new List<int>();
   private int _n;
+  //  private List<int> _A;
+  private string _A;
 
-  
-  
   public class ParamsData
   {
     private int _NumSliders;
@@ -98,38 +102,44 @@ public class Script_Instance : GH_ScriptInstance
       _Points = Points;
     }
 
-    
-    
+
+
     public ParamsData()
     {
-      _NumSliders = 5;
-      _NumPoints = 5;
-      
+      _NumSliders = 0;
+      _NumPoints = 0;
+
       _SliderVals.Clear();
+      
+      /*
       for (int sliderinit = 0; sliderinit < _NumSliders; sliderinit++) {
         _SliderVals.Add((sliderinit - 3) * 11);
       }
-   
-   
-      _Points.Clear();   
+      */
+
+      _Points.Clear();
+      
+      /*
       for (int pointsinit = 0; pointsinit < _NumPoints; pointsinit++) {
         _Points.Add(new Rhino.Geometry.Point3d(pointsinit * 22, pointsinit * 22, pointsinit * 22));
       }
-   
-      
+      */
+
     }
-    
-  
+
+
     public int NumSliders { get {return _NumSliders;} set {_NumSliders = value;} }
     public List<int> SliderVals { get {return _SliderVals;} set {_SliderVals = value;} }
     public int NumPoints { get {return _NumPoints;} set {_NumPoints = value;} }
     public List<Rhino.Geometry.Point3d> Points { get {return _Points;} set {_Points = value;} }
   }
 
-  
-  
+
+
   private void SolutionCallback(GH_Document doc)
   {
+
+    /*
 
     string[] lines;
     string inputpath = @"C:\Users\ddxgo\Documents\Rhino\20200626c#expts\20200629params1.txt";
@@ -147,9 +157,19 @@ public class Script_Instance : GH_ScriptInstance
       Print("file not found");
     }
 
-    _n = _dataIn[0];
-    _dataIn.RemoveAt(0);
+    */
 
+    string jsonstring = File.ReadAllText(_path);
+    ParamsData paramdata = new ParamsData();
+    paramdata = JsonConvert.DeserializeObject<ParamsData>(jsonstring);
+
+    _n = paramdata.NumSliders;
+    _dataIn = paramdata.SliderVals;
+
+    
+    string teststring = JsonConvert.SerializeObject(paramdata);
+    
+    _A = teststring;
 
     Random rnd = new Random();
 
@@ -256,16 +276,22 @@ public class Script_Instance : GH_ScriptInstance
       reset = (bool)(inputs[0]);
     }
 
-    string controlComponentName = default(string);
+    string path = default(string);
     if (inputs[1] != null)
     {
-      controlComponentName = (string)(inputs[1]);
+      path = (string)(inputs[1]);
+    }
+
+    string controlComponentName = default(string);
+    if (inputs[2] != null)
+    {
+      controlComponentName = (string)(inputs[2]);
     }
 
     List<int> dataIn = null;
-    if (inputs[2] != null)
+    if (inputs[3] != null)
     {
-      dataIn = GH_DirtyCaster.CastToList<int>(inputs[2]);
+      dataIn = GH_DirtyCaster.CastToList<int>(inputs[3]);
     }
 
 
@@ -274,7 +300,7 @@ public class Script_Instance : GH_ScriptInstance
 
 
     //4. Invoke RunScript
-    RunScript(reset, controlComponentName, dataIn, ref A);
+    RunScript(reset, path, controlComponentName, dataIn, ref A);
       
     try
     {
