@@ -57,11 +57,11 @@ public class Script_Instance : GH_ScriptInstance
   /// Output parameters as ref arguments. You don't have to assign output parameters, 
   /// they will have a default value.
   /// </summary>
-  private void RunScript(bool store, string path, int NumSliders, List<int> SliderVals, int NumPoints, List<Point3d> Points)
+  private void RunScript(bool store, string path, List<int> NumSliders, List<int> SliderVals, int NumPoints, List<Point3d> Points)
   {
         if(store)
     {
-//      string outputpath = @"C:\Users\ddxgo\Documents\Rhino\20200626c#expts\testjsonout.txt";
+      //      string outputpath = @"C:\Users\ddxgo\Documents\Rhino\20200626c#expts\testjsonout.txt";
       string jsonstring;
       ParamsData paramsdata = new ParamsData(NumSliders, SliderVals, NumPoints, Points);
       jsonstring = JsonConvert.SerializeObject(paramsdata);
@@ -76,12 +76,12 @@ public class Script_Instance : GH_ScriptInstance
 
   public class ParamsData
   {
-    private int _NumSliders;
+    private List<int> _NumSliders = new List<int>();
     private List<int> _SliderVals = new List<int>();
     private int _NumPoints;
     private List<Rhino.Geometry.Point3d> _Points = new List<Rhino.Geometry.Point3d>();
 
-    public ParamsData(int NumSliders, List<int> SliderVals, int NumPoints, List<Rhino.Geometry.Point3d> Points)
+    public ParamsData(List<int> NumSliders, List<int> SliderVals, int NumPoints, List<Rhino.Geometry.Point3d> Points)
     {
       _NumSliders = NumSliders;
       _SliderVals = SliderVals;
@@ -93,25 +93,14 @@ public class Script_Instance : GH_ScriptInstance
 
     public ParamsData()
     {
-      _NumSliders = 5;
-      _NumPoints = 5;
-
+      _NumSliders.Clear();
+      _NumPoints = 0;
       _SliderVals.Clear();
-      for (int sliderinit = 0; sliderinit < _NumSliders; sliderinit++) {
-        _SliderVals.Add((sliderinit - 3) * 11);
-      }
-
-
       _Points.Clear();
-      for (int pointsinit = 0; pointsinit < _NumPoints; pointsinit++) {
-        _Points.Add(new Rhino.Geometry.Point3d(pointsinit * 22, pointsinit * 22, pointsinit * 22));
-      }
-
-
     }
 
 
-    public int NumSliders { get {return _NumSliders;} set {_NumSliders = value;} }
+    public List<int> NumSliders { get {return _NumSliders;} set {_NumSliders = value;} }
     public List<int> SliderVals { get {return _SliderVals;} set {_SliderVals = value;} }
     public int NumPoints { get {return _NumPoints;} set {_NumPoints = value;} }
     public List<Rhino.Geometry.Point3d> Points { get {return _Points;} set {_Points = value;} }
@@ -256,12 +245,11 @@ public class Script_Instance : GH_ScriptInstance
       path = (string)(inputs[1]);
     }
 
-    int NumSliders = default(int);
+    List<int> NumSliders = null;
     if (inputs[2] != null)
     {
-      NumSliders = (int)(inputs[2]);
+      NumSliders = GH_DirtyCaster.CastToList<int>(inputs[2]);
     }
-
     List<int> SliderVals = null;
     if (inputs[3] != null)
     {

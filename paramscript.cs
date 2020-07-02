@@ -59,11 +59,14 @@ public class Script_Instance : GH_ScriptInstance
   /// </summary>
   private void RunScript(bool reset, string path, string controlComponentName, ref object A)
   {
-        if(reset)
+    
+    if(reset)
     {
       _controlComponentName = controlComponentName;
       _path = path;
       GrasshopperDocument.ScheduleSolution(5, SolutionCallback);
+
+      
     }
   }
 
@@ -72,16 +75,17 @@ public class Script_Instance : GH_ScriptInstance
   private string _path;
   private string _controlComponentName;
   private List<int> _dataIn = new List<int>();
-  private int _n;
-
+  private List<int> _n = new List<int>();
+  private List<Rhino.Geometry.Point3d> _pointsdata = new List<Rhino.Geometry.Point3d>();
+  
   public class ParamsData
   {
-    private int _NumSliders;
+    private List<int> _NumSliders = new List<int>();
     private List<int> _SliderVals = new List<int>();
     private int _NumPoints;
     private List<Rhino.Geometry.Point3d> _Points = new List<Rhino.Geometry.Point3d>();
 
-    public ParamsData(int NumSliders, List<int> SliderVals, int NumPoints, List<Rhino.Geometry.Point3d> Points)
+    public ParamsData(List<int> NumSliders, List<int> SliderVals, int NumPoints, List<Rhino.Geometry.Point3d> Points)
     {
       _NumSliders = NumSliders;
       _SliderVals = SliderVals;
@@ -91,13 +95,13 @@ public class Script_Instance : GH_ScriptInstance
 
     public ParamsData()
     {
-      _NumSliders = 0;
+      _NumSliders.Clear();
       _NumPoints = 0;
       _SliderVals.Clear();
       _Points.Clear();
     }
 
-    public int NumSliders { get {return _NumSliders;} set {_NumSliders = value;} }
+    public List<int> NumSliders { get {return _NumSliders;} set {_NumSliders = value;} }
     public List<int> SliderVals { get {return _SliderVals;} set {_SliderVals = value;} }
     public int NumPoints { get {return _NumPoints;} set {_NumPoints = value;} }
     public List<Rhino.Geometry.Point3d> Points { get {return _Points;} set {_Points = value;} }
@@ -113,9 +117,14 @@ public class Script_Instance : GH_ScriptInstance
 
     _n = paramdata.NumSliders;
     _dataIn = paramdata.SliderVals;
+    _pointsdata = paramdata.Points;
+      
+    for (int index = 1; index < _n.Count; index++) {
+      _n[index] = _n[index] + _n[index - 1];
+    }
 
 
-    string teststring = JsonConvert.SerializeObject(paramdata);
+
 
     Random rnd = new Random();
 
@@ -125,7 +134,7 @@ public class Script_Instance : GH_ScriptInstance
 
     foreach(IGH_DocumentObject obj in GrasshopperDocument.Objects)
     {
-      if (obj.NickName == _controlComponentName)
+      if (obj.NickName.StartsWith(_controlComponentName))
       {
         deletions.Add(obj);
         IGH_Param tempParam = obj as IGH_Param;
@@ -146,25 +155,31 @@ public class Script_Instance : GH_ScriptInstance
     }
 
     Grasshopper.Kernel.Parameters.Param_Integer targetParam = new Grasshopper.Kernel.Parameters.Param_Integer();
-    targetParam.NickName = _controlComponentName;
+    targetParam.NickName = _controlComponentName + "slids";
     GrasshopperDocument.AddObject(targetParam, false);
     targetParam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 110);
 
     Grasshopper.Kernel.Parameters.Param_Point pointsParam = new Grasshopper.Kernel.Parameters.Param_Point();
-    pointsParam.NickName = _controlComponentName;
+    pointsParam.NickName = _controlComponentName + "points";
     GrasshopperDocument.AddObject(pointsParam, false);
     pointsParam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 70);
 
 
-    pointsParam.SetPersistentData(paramdata.Points.ToArray());
+    pointsParam.SetPersistentData(_pointsdata.ToArray());
 
     foreach(IGH_Param receivingParam in receivingParams)
     {
       receivingParam.AddSource(targetParam);
     }
 
-    for(int i = 0;i < _n;i++)
+    int Yoffset = -12;
+    
+    for(int i = 0;i < _n[_n.Count-1];i++)
     {
+      if (_n.Exists(x => x == i))
+      {
+        Yoffset = Yoffset + 10;
+      }
       //instantiate  new slider
       Grasshopper.Kernel.Special.GH_NumberSlider slid = new Grasshopper.Kernel.Special.GH_NumberSlider();
       slid.CreateAttributes(); //sets up default values, and makes sure your slider doesn't crash rhino
@@ -174,7 +189,7 @@ public class Script_Instance : GH_ScriptInstance
 
 
       int inputcount = targetParam.SourceCount;
-      slid.Attributes.Pivot = new System.Drawing.PointF((float) targetParam.Attributes.Pivot.X - slid.Attributes.Bounds.Width - 70, (float) targetParam.Attributes.Pivot.Y + inputcount * 30 - 12);
+      slid.Attributes.Pivot = new System.Drawing.PointF((float) targetParam.Attributes.Pivot.X - slid.Attributes.Bounds.Width - 70, (float) targetParam.Attributes.Pivot.Y + inputcount * 20 + Yoffset);
       slid.Slider.Maximum = 50;
       slid.Slider.Minimum = -50;
       slid.Slider.DecimalPlaces = 0;
