@@ -66,7 +66,7 @@ public class Script_Instance : GH_ScriptInstance
       _path = path;
       GrasshopperDocument.ScheduleSolution(5, SolutionCallback);
 
-      
+
     }
   }
 
@@ -77,7 +77,7 @@ public class Script_Instance : GH_ScriptInstance
   private List<int> _dataIn = new List<int>();
   private List<int> _n = new List<int>();
   private List<Rhino.Geometry.Point3d> _pointsdata = new List<Rhino.Geometry.Point3d>();
-  
+
   public class ParamsData
   {
     private List<int> _NumSliders = new List<int>();
@@ -108,6 +108,29 @@ public class Script_Instance : GH_ScriptInstance
   }
 
 
+  public class OutputParam
+  {
+    private int _outParam;
+    private List<IGH_Param> _recvParams;
+
+
+    public OutputParam()
+    {
+      _outParam = 0;
+      _recvParams = new List<IGH_Param>();
+    }
+
+
+    public OutputParam(int outParam, List<IGH_Param> recvParams)
+    {
+      _outParam = outParam;
+      _recvParams = recvParams;
+    }
+
+    public int outParam { get {return _outParam;} set {_outParam = value;}}
+    public List<IGH_Param> recvParams { get {return _recvParams;} set {_recvParams = value;}}
+  }
+
 
   private void SolutionCallback(GH_Document doc)
   {
@@ -118,19 +141,14 @@ public class Script_Instance : GH_ScriptInstance
     _n = paramdata.NumSliders;
     _dataIn = paramdata.SliderVals;
     _pointsdata = paramdata.Points;
-      
-    for (int index = 1; index < _n.Count; index++) {
-      _n[index] = _n[index] + _n[index - 1];
-    }
-
-
 
 
     Random rnd = new Random();
 
     List<IGH_DocumentObject> deletions = new List<IGH_DocumentObject>();
 
-    List<IGH_Param> receivingParams = new List<IGH_Param>();
+    List<OutputParam> outputParams = new List<OutputParam>();
+
 
     foreach(IGH_DocumentObject obj in GrasshopperDocument.Objects)
     {
@@ -142,22 +160,68 @@ public class Script_Instance : GH_ScriptInstance
         {
           deletions.AddRange(tempParam.Sources);
         }
-        foreach(IGH_Param recip in tempParam.Recipients)
+
+        if (obj.NickName.StartsWith(_controlComponentName + "slids"))
         {
-          receivingParams.Add(recip);
+          int ObjectIndex;
+          Int32.TryParse(System.Text.RegularExpressions.Regex.Match(obj.NickName, @"(\d+)\z").Value, out ObjectIndex);
+          
+          
+          List<IGH_Param> receivingParams = new List<IGH_Param>();
+          foreach(IGH_Param recip in tempParam.Recipients)
+          {
+            receivingParams.Add(recip);
+          }
+          outputParams.Add(new OutputParam(ObjectIndex, receivingParams));
         }
       }
     }
 
+    
+    string testpath = @"C:\Users\ddxgo\Documents\Rhino\20200626c#expts\testdata.txt";
+    string write = "";
+    foreach (OutputParam op in outputParams) 
+    {
+      foreach (IGH_Param par in op.recvParams)
+      {
+        write = write + par.NickName;
+      }
+    }
+    //string testjsonstring = JsonConvert.SerializeObject(paramdata);
+    File.WriteAllText(testpath, write);
+   
+    
     foreach(IGH_DocumentObject delobj in deletions)
     {
       GrasshopperDocument.RemoveObject(delobj, false);
     }
 
-    Grasshopper.Kernel.Parameters.Param_Integer targetParam = new Grasshopper.Kernel.Parameters.Param_Integer();
-    targetParam.NickName = _controlComponentName + "slids";
-    GrasshopperDocument.AddObject(targetParam, false);
-    targetParam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 110);
+    List<Grasshopper.Kernel.Parameters.Param_Integer> targetParam = new List<Grasshopper.Kernel.Parameters.Param_Integer>();
+
+
+    for (int index = 0; index < _n.Count; index++) {
+
+      targetParam.Add(new Grasshopper.Kernel.Parameters.Param_Integer());
+      targetParam[index].NickName = _controlComponentName + "slids" + index;
+      GrasshopperDocument.AddObject(targetParam[index], false);
+
+      if(index == 0) {
+        targetParam[index].Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 110);
+      }
+      else
+      {
+        _n[index] = _n[index] + _n[index - 1];
+        targetParam[index].Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 110 + _n[index - 1] * 20 + index * 10);
+      }
+      
+      if (outputParams.Exists(opar => opar.outParam == index))
+      {
+        foreach(IGH_Param receivingParam in outputParams.Find(opar => opar.outParam == index).recvParams)
+        {
+          receivingParam.AddSource(targetParam[index]);
+        }
+      }
+    }
 
     Grasshopper.Kernel.Parameters.Param_Point pointsParam = new Grasshopper.Kernel.Parameters.Param_Point();
     pointsParam.NickName = _controlComponentName + "points";
@@ -167,18 +231,17 @@ public class Script_Instance : GH_ScriptInstance
 
     pointsParam.SetPersistentData(_pointsdata.ToArray());
 
-    foreach(IGH_Param receivingParam in receivingParams)
-    {
-      receivingParam.AddSource(targetParam);
-    }
+
 
     int Yoffset = -12;
-    
-    for(int i = 0;i < _n[_n.Count-1];i++)
+    int CurrentParam = 0;
+
+    for(int i = 0;i < _n[_n.Count - 1];i++)
     {
       if (_n.Exists(x => x == i))
       {
         Yoffset = Yoffset + 10;
+        CurrentParam++;
       }
       //instantiate  new slider
       Grasshopper.Kernel.Special.GH_NumberSlider slid = new Grasshopper.Kernel.Special.GH_NumberSlider();
@@ -188,8 +251,7 @@ public class Script_Instance : GH_ScriptInstance
       //targetParam.Attributes.Bounds
 
 
-      int inputcount = targetParam.SourceCount;
-      slid.Attributes.Pivot = new System.Drawing.PointF((float) targetParam.Attributes.Pivot.X - slid.Attributes.Bounds.Width - 70, (float) targetParam.Attributes.Pivot.Y + inputcount * 20 + Yoffset);
+      slid.Attributes.Pivot = new System.Drawing.PointF((float) targetParam[0].Attributes.Pivot.X - slid.Attributes.Bounds.Width - 70, (float) targetParam[0].Attributes.Pivot.Y + i * 20 + Yoffset);
       slid.Slider.Maximum = 50;
       slid.Slider.Minimum = -50;
       slid.Slider.DecimalPlaces = 0;
@@ -207,7 +269,7 @@ public class Script_Instance : GH_ScriptInstance
       GrasshopperDocument.AddObject(slid, false);
 
       //Connect the new slider to this component
-      targetParam.AddSource(slid);
+      targetParam[CurrentParam].AddSource(slid);
     }
 
 
