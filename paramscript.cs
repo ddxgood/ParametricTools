@@ -65,8 +65,6 @@ public class Script_Instance : GH_ScriptInstance
       _controlComponentName = controlComponentName;
       _path = path;
       GrasshopperDocument.ScheduleSolution(5, SolutionCallback);
-
-
     }
   }
 
@@ -78,12 +76,12 @@ public class Script_Instance : GH_ScriptInstance
   private List<int> _n = new List<int>();
   private List<Rhino.Geometry.Point3d> _pointsdata = new List<Rhino.Geometry.Point3d>();
 
-  public class ParamsData
+  public class ParamsData //data for storage in text file
   {
-    private List<int> _NumSliders = new List<int>();
-    private List<int> _SliderVals = new List<int>();
-    private int _NumPoints;
-    private List<Rhino.Geometry.Point3d> _Points = new List<Rhino.Geometry.Point3d>();
+    private List<int> _NumSliders = new List<int>(); //creates a set of slider banks; list NumSliders is sliders per bank
+    private List<int> _SliderVals = new List<int>(); //all sliders in all banks in one big list
+    private int _NumPoints;                          //number of geometry points
+    private List<Rhino.Geometry.Point3d> _Points = new List<Rhino.Geometry.Point3d>();  //geometry points
 
     public ParamsData(List<int> NumSliders, List<int> SliderVals, int NumPoints, List<Rhino.Geometry.Point3d> Points)
     {
@@ -108,18 +106,16 @@ public class Script_Instance : GH_ScriptInstance
   }
 
 
-  public class OutputParam
+  public class OutputParam //class for keeping track of the output connections for the slider grouping params
   {
     private int _outParam;
     private List<IGH_Param> _recvParams;
-
 
     public OutputParam()
     {
       _outParam = 0;
       _recvParams = new List<IGH_Param>();
     }
-
 
     public OutputParam(int outParam, List<IGH_Param> recvParams)
     {
@@ -134,10 +130,11 @@ public class Script_Instance : GH_ScriptInstance
 
   private void SolutionCallback(GH_Document doc)
   {
+    //read file, deserialize json, send variables out of the extracted class
+
     string jsonstring = File.ReadAllText(_path);
     ParamsData paramdata = new ParamsData();
     paramdata = JsonConvert.DeserializeObject<ParamsData>(jsonstring);
-
     _n = paramdata.NumSliders;
     _dataIn = paramdata.SliderVals;
     _pointsdata = paramdata.Points;
@@ -145,80 +142,61 @@ public class Script_Instance : GH_ScriptInstance
 
     Random rnd = new Random();
 
-    List<IGH_DocumentObject> deletions = new List<IGH_DocumentObject>();
-
-    List<OutputParam> outputParams = new List<OutputParam>();
-
+    List<IGH_DocumentObject> deletions = new List<IGH_DocumentObject>();  //list of objects to delete from grasshopper document
+    List<OutputParam> outputParams = new List<OutputParam>();  //list of the slider grouping params and their output connections
 
     foreach(IGH_DocumentObject obj in GrasshopperDocument.Objects)
     {
-      if (obj.NickName.StartsWith(_controlComponentName))
+      if (obj.NickName.StartsWith(_controlComponentName)) //the point and integer params i've created
       {
         deletions.Add(obj);
-        IGH_Param tempParam = obj as IGH_Param;
+        IGH_Param tempParam = obj as IGH_Param;  //cast obj into a param to locate sources and recipients
         if (tempParam.SourceCount > 0)
         {
-          deletions.AddRange(tempParam.Sources);
+          deletions.AddRange(tempParam.Sources);  //add source sliders to deletions list
         }
 
-        if (obj.NickName.StartsWith(_controlComponentName + "slids"))
+        if (obj.NickName.StartsWith(_controlComponentName + "slids"))  //the integer params
         {
           int ObjectIndex;
-          Int32.TryParse(System.Text.RegularExpressions.Regex.Match(obj.NickName, @"(\d+)\z").Value, out ObjectIndex);
-          
-          
+          Int32.TryParse(System.Text.RegularExpressions.Regex.Match(obj.NickName, @"(\d+)\z").Value, out ObjectIndex);  //regex to extract index number from end of param name
           List<IGH_Param> receivingParams = new List<IGH_Param>();
           foreach(IGH_Param recip in tempParam.Recipients)
           {
             receivingParams.Add(recip);
           }
-          outputParams.Add(new OutputParam(ObjectIndex, receivingParams));
+          outputParams.Add(new OutputParam(ObjectIndex, receivingParams));  //put output param index and recipients into an object in a list
         }
       }
-    }
-
+    }   
     
-    string testpath = @"C:\Users\ddxgo\Documents\Rhino\20200626c#expts\testdata.txt";
-    string write = "";
-    foreach (OutputParam op in outputParams) 
-    {
-      foreach (IGH_Param par in op.recvParams)
-      {
-        write = write + par.NickName;
-      }
-    }
-    //string testjsonstring = JsonConvert.SerializeObject(paramdata);
-    File.WriteAllText(testpath, write);
-   
-    
-    foreach(IGH_DocumentObject delobj in deletions)
+    foreach(IGH_DocumentObject delobj in deletions)  //delete the stuff
     {
       GrasshopperDocument.RemoveObject(delobj, false);
     }
 
-    List<Grasshopper.Kernel.Parameters.Param_Integer> targetParam = new List<Grasshopper.Kernel.Parameters.Param_Integer>();
+    List<Grasshopper.Kernel.Parameters.Param_Integer> targetParam = new List<Grasshopper.Kernel.Parameters.Param_Integer>();  //holds the new output params as we build them  //rename targetParam
 
+    for (int index = 0; index < _n.Count; index++) {  //this loop runs once per slider bank    //rename index
 
-    for (int index = 0; index < _n.Count; index++) {
-
-      targetParam.Add(new Grasshopper.Kernel.Parameters.Param_Integer());
-      targetParam[index].NickName = _controlComponentName + "slids" + index;
+      targetParam.Add(new Grasshopper.Kernel.Parameters.Param_Integer());  //create the new output param
+      targetParam[index].NickName = _controlComponentName + "slids" + index;  //assign the name to the output param including the index number
       GrasshopperDocument.AddObject(targetParam[index], false);
 
-      if(index == 0) {
-        targetParam[index].Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 110);
+      if(index == 0) {  //put param in place
+        targetParam[index].Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 110); 
       }
       else
       {
-        _n[index] = _n[index] + _n[index - 1];
+        _n[index] = _n[index] + _n[index - 1];  //aggregate list of number of sliders per bank to create slider index breakpoints
         targetParam[index].Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 110 + _n[index - 1] * 20 + index * 10);
       }
       
-      if (outputParams.Exists(opar => opar.outParam == index))
+      if (outputParams.Exists(opar => opar.outParam == index))  //looks in the list of deleted output params and determines if one has the same index as the param being created
       {
         foreach(IGH_Param receivingParam in outputParams.Find(opar => opar.outParam == index).recvParams)
         {
-          receivingParam.AddSource(targetParam[index]);
+          receivingParam.AddSource(targetParam[index]);  //connects the new param to the old param stuff 
         }
       }
     }
