@@ -144,7 +144,8 @@ public class Script_Instance : GH_ScriptInstance
 
     List<IGH_DocumentObject> deletions = new List<IGH_DocumentObject>();  //list of objects to delete from grasshopper document
     List<OutputParam> outputParams = new List<OutputParam>();  //list of the slider grouping params and their output connections
-
+    List<IGH_Param> PointRecvParams = new List<IGH_Param>();  //list of what the point param is connected to
+    
     foreach(IGH_DocumentObject obj in GrasshopperDocument.Objects)
     {
       if (obj.NickName.StartsWith(_controlComponentName)) //the point and integer params i've created
@@ -156,6 +157,14 @@ public class Script_Instance : GH_ScriptInstance
           deletions.AddRange(tempParam.Sources);  //add source sliders to deletions list
         }
 
+        if (obj.NickName.StartsWith(_controlComponentName + "points"))
+        {
+          foreach(IGH_Param recip in tempParam.Recipients)
+          {
+            PointRecvParams.Add(recip);
+          }
+        }
+        
         if (obj.NickName.StartsWith(_controlComponentName + "slids"))  //the integer params
         {
           int ObjectIndex;
@@ -168,8 +177,8 @@ public class Script_Instance : GH_ScriptInstance
           outputParams.Add(new OutputParam(ObjectIndex, receivingParams));  //put output param index and recipients into an object in a list
         }
       }
-    }   
-    
+    }
+
     foreach(IGH_DocumentObject delobj in deletions)  //delete the stuff
     {
       GrasshopperDocument.RemoveObject(delobj, false);
@@ -184,19 +193,19 @@ public class Script_Instance : GH_ScriptInstance
       GrasshopperDocument.AddObject(targetParam[index], false);
 
       if(index == 0) {  //put param in place
-        targetParam[index].Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 110); 
+        targetParam[index].Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 110);
       }
       else
       {
         _n[index] = _n[index] + _n[index - 1];  //aggregate list of number of sliders per bank to create slider index breakpoints
         targetParam[index].Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 110 + _n[index - 1] * 20 + index * 10);
       }
-      
+
       if (outputParams.Exists(opar => opar.outParam == index))  //looks in the list of deleted output params and determines if one has the same index as the param being created
       {
         foreach(IGH_Param receivingParam in outputParams.Find(opar => opar.outParam == index).recvParams)
         {
-          receivingParam.AddSource(targetParam[index]);  //connects the new param to the old param stuff 
+          receivingParam.AddSource(targetParam[index]);  //connects the new param to the old param stuff
         }
       }
     }
@@ -205,7 +214,10 @@ public class Script_Instance : GH_ScriptInstance
     pointsParam.NickName = _controlComponentName + "points";
     GrasshopperDocument.AddObject(pointsParam, false);
     pointsParam.Attributes.Pivot = new System.Drawing.PointF(Component.Attributes.Pivot.X + 20, Component.Attributes.Pivot.Y + 70);
-
+    foreach(IGH_Param receivingParam in PointRecvParams)
+    {
+      receivingParam.AddSource(pointsParam);
+    }
 
     pointsParam.SetPersistentData(_pointsdata.ToArray());
 
@@ -230,8 +242,8 @@ public class Script_Instance : GH_ScriptInstance
 
 
       slid.Attributes.Pivot = new System.Drawing.PointF((float) targetParam[0].Attributes.Pivot.X - slid.Attributes.Bounds.Width - 70, (float) targetParam[0].Attributes.Pivot.Y + i * 20 + Yoffset);
-      slid.Slider.Maximum = 50;
-      slid.Slider.Minimum = -50;
+      slid.Slider.Maximum = 100;
+      slid.Slider.Minimum = 0;
       slid.Slider.DecimalPlaces = 0;
       // slid.SetSliderValue((decimal) (rnd.Next(-50, 51)));
 
